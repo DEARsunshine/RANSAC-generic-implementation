@@ -7,48 +7,73 @@
 using std::vector;
 using std::string;
 
-class myDot {
+/*
+  my2DDot is the basic abstraction of point in 2D space.
+*/
+class my2DDot {
 public:
-	float x;
-	float y;
-	myDot(float a, float b) {
+	/*
+		Its two member variable x and y represents it position (x,y) in 2D space.
+	*/
+	float x, y;
+	my2DDot(float a, float b) {
 		x = a;
 		y = b;
 	}
-	myDot(const myDot &other) {
+	my2DDot(const my2DDot &other) {
 		x = other.x;
 		y = other.y;
 	}
-	myDot() {
+	my2DDot() {
 		x = y = 0;
 	}
-	/*float dotProduct(const myDot& v) const	{
+	float dotProduct(const my2DDot& v) const	{
 		return x * v.x + y * v.y;
 	}
-	myDot operator - (myDot &a) {
-		return myDot(x - a.x, y - a.y);
+	my2DDot operator - (my2DDot &a) {
+		return my2DDot(x - a.x, y - a.y);
 	}
-	bool operator== (myDot &a) {
+	bool operator== (my2DDot &a) {
 		if (this->x == a.x && this->y == a.y)
 			return true;
 		else
 			return false;
-	}*/
+	}
 };
+
+/*
+	Use template to implement generalization.
+	my2DLine is the class that represent a line in 2D space.
+	@para "Point" represent the basic element type of a 2D line -- point.
+*/
 template<typename Point>
-class Line {
+class my2DLine {
 public:
 	/*
-	y = Kx + B;
+	Use formula "y = Kx + B" to represent a line in 2D space.
 	*/
 	double K, B;
+	/*
+	The bool variable verticalToX indicates the situation that the line is vertical to X-axis.
+	The formula "y = Kx + B" can not be applied to this situation.
+	*/
 	bool verticalToX;
-	void operator = (Line &other) {
+	void operator = (my2DLine &other) {
 		K = other.K;
 		B = other.B;
 	}
-	Line() : K(0), B(0), verticalToX(false) {}
-	Line(vector<Point> points, const char* fitType) {
+	my2DLine() : K(0), B(0), verticalToX(false) {}
+	/*
+		This construction function use the point dataset and use them to construct a line in 2D space.
+		@para points is the dataset that are used to fit the model.
+		@para fitType is the command that are used to control the fitting method.
+			  There are two types in this demo: "leastSquareFit" and "directlyFitModel".
+			  "leastSquareFit" is to fit the model using least square method.
+			  "directlyFitModel" is to fit the model using minimal number of data.
+			  	Such as two points for a line and three points for a circle.
+		@return The fitted line object.
+	*/
+	my2DLine(vector<Point> points, const char* fitType) {
 		assert(points.size() >= 2);
 		if (fitType == "leastSquareFit") {
 			double t1 = 0, t2 = 0, t3 = 0, t4 = 0;
@@ -69,8 +94,10 @@ public:
 			}
 		}
 		else if (fitType == "directlyFitModel") {
+			// Fitting a line need exactly two points.
 			assert(points.size() == 2);
-			if (abs(points[0].x - points[1].x) <= 0.00001) { // Vertical to X-axis
+			// See whether the line is vertical to X-axis.
+			if (abs(points[0].x - points[1].x) <= 0.00001) { 
 				verticalToX = true;
 			}
 			else {
@@ -80,6 +107,14 @@ public:
 		}
 		
 	}
+
+	/*
+		modelError calculate the accumulated error from current "inliers"
+		  and return the accumulated error. It is used to test how good a model(line) is.
+		@para points are the "inliers" which are used to calculate
+		   their accumulated error/distance from the fitting model.
+		@return The accumulated error from all the "inliers" under this model.
+	*/
 	double modelError(vector<Point> &points) {
 		double accumulateError = 0;
 		int Size = points.size();
@@ -91,24 +126,36 @@ public:
 		}
 		return accumulateError;
 	}
-	double disFromModel(Point p) {
+	/*
+		disFromModel calculate the distance/error of a point from current model(line).
+		@para p is the point to be measured.
+		@return the error/distance between current model/line to the point.
+	*/
+	double disFromModel(Point &p) {
 		return abs((p.x * K + B) - p.y);
 	}
 };
 
 
+/*
+	Use template to implement generalization.
+	my2DCircle is the class that represent a circle in 2D space.
+	@para "Point" represent the basic element type of a 2D circle -- point.
+*/
+
 template <typename Point>
-class Circle {
+class my2DCircle {
 public:
-	myDot center;
+	Point center;
 	double radius;
 
-	Circle() { }
+	my2DCircle() { }
 
-	Circle(const myDot &c, double r) : center(c), radius(r) { }
+	my2DCircle(const Point &c, double r) : center(c), radius(r) { }
 
-	Circle(vector<Point> points, const char* fitType) {
-		assert(points.size() >= 3);
+	my2DCircle(vector<Point> points, const char* fitType) {
+		int Size = points.size();
+		assert(Size >= 3);
 		double X1 = 0;
 		double Y1 = 0;
 		double X2 = 0;
@@ -118,20 +165,20 @@ public:
 		double X1Y1 = 0;
 		double X1Y2 = 0;
 		double X2Y1 = 0;
-		for (i = 0; i < m_nNum; i++) {
-			X1 = X1 + points[i].x;//使用对象数组
-			Y1 = Y1 + points[i].y;
-			X2 = X2 + points[i].x*points[i].x;
-			Y2 = Y2 + points[i].y*points[i].y;
-			X3 = X3 + points[i].x*points[i].x*points[i].x;
-			Y3 = Y3 + points[i].y*points[i].y*points[i].y;
-			X1Y1 = X1Y1 + points[i].x*points[i].y;
-			X1Y2 = X1Y2 + points[i].x*points[i].y*points[i].y;
-			X2Y1 = X2Y1 + points[i].x*points[i].x*points[i].y;
+		for (int i = 0; i < Size; i++) {
+			X1 += points[i].x;//使用对象数组
+			Y1 += points[i].y;
+			X2 += points[i].x * points[i].x;
+			Y2 += points[i].y * points[i].y;
+			X3 += points[i].x * points[i].x * points[i].x;
+			Y3 += points[i].y * points[i].y * points[i].y;
+			X1Y1 += points[i].x * points[i].y;
+			X1Y2 += points[i].x * points[i].y * points[i].y;
+			X2Y1 += points[i].x * points[i].x * points[i].y;
 		}
 		double C, D, E, G, H, N;
 		double a, b, c;
-		N = m_nNum;
+		N = Size;
 		C = N*X2 - X1*X1;
 		D = N*X1Y1 - X1*Y1;
 		E = N*X3 + N*X1Y2 - (X2 + Y2)*X1;
@@ -147,48 +194,26 @@ public:
 		center.x = A;
 		center.y = B;
 		radius = R;
-		
 
+		//cout << "x: " << center.x << " y: " << center.y << " radius: " << radius << endl;
+	}
 
-
-		/*long N = std::distance(begin, end);
-		if (N < 3) {
-			exists = false;
+	double modelError(vector<Point> &points) {
+		double accumulateError = 0;
+		int Size = points.size();
+		assert(Size > 0);
+		double distanceFromCenter;
+		for (int i = 0; i < Size; i++) {
+			distanceFromCenter = (center.x - points[i].x) * (center.x - points[i].x) + (center.y - points[i].y) * (center.y - points[i].y);
+			accumulateError += sqrt(abs(distanceFromCenter - radius*radius));
 		}
+		return accumulateError;
+	}
 
-		Point M = std::accumulate(begin, end, Point2d(0.0, 0.0));
-		M = (1.0 / N) * M;
-		Point2d A(M);
-
-		Point2d p;
-		double Suu = 0, Suv = 0, Svv = 0, Suuu = 0, Suvv = 0, Svvv = 0, Svuu = 0;
-		int i = 0;
-		for (Iterator it = begin; it != end; it++) {
-			p = *it - M;
-			double uu = p.x * p.x, vv = p.y * p.y;
-			Suu += uu;
-			Svv += vv;
-			Suv += p.x * p.y;
-			Suuu += uu * p.x;
-			Svvv += vv * p.y;
-			Suvv += p.x * vv;
-			Svuu += p.y * uu;
-		}
-
-		double alpha = 0.5 * (Suuu + Suvv), beta = 0.5 * (Svvv + Svuu),
-			delta = Suu * Svv - Suv * Suv,
-			deltaX = alpha * Svv - beta * Suv, deltaY = beta * Suu - alpha * Suv;
-
-		if (delta == 0) {
-			exists = false;
-			return;
-		}
-
-		Point2d u(deltaX / delta, deltaY / delta);
-		r = std::sqrt((u.x * u.x) + (u.y * u.y) + ((Suu + Svv) / N));
-		c = u + M;
-
-		exists = true;*/
+	double disFromModel(Point &p) {
+		double distanceFromCenter = (center.x - p.x) * (center.x - p.x) + (center.y - p.y) * (center.y - p.y);
+		double diff = sqrt(abs(distanceFromCenter - radius*radius));
+		return diff;
 	}
 
 	/*template<class Iterator>
